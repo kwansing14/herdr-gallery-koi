@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" shape-rendering="crispEdges">
+  <g fill="#fff">
+    <path fill-opacity=".8" d="M50 14H60V16H54V18H50ZM42 18H46V20H42ZM28 16H30V18H28Z"/>
+    <path fill-opacity=".4" d="M60 16H64V18H60ZM48 18H52V20H48ZM56 20H60V22H56Z"/>
+  </g>
+</svg>
