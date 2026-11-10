@@ -4,6 +4,10 @@ Herdr's stock window with a small pixel-art koi pond tucked under the agents lis
 
 ![Koi Pond](preview.png)
 
+| Night (23:00) | Sunrise (6:15) | Day (10:00) | Afternoon (15:00) | Sunset (18:30) |
+| --- | --- | --- | --- | --- |
+| ![Night](previews/night.png) | ![Sunrise](previews/sunrise.png) | ![Day](previews/day.png) | ![Afternoon](previews/afternoon.png) | ![Sunset](previews/sunset.png) |
+
 **What you see:**
 
 - **Everything outside the pond is Herdr's stock `main` layout:** the 268px sidebar with brand (46px), spaces, agents and footer (69px); the 42px tab bar; terminal panes; the hidden Files/Changes panel; and the 28px status bar.
