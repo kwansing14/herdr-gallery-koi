@@ -18,7 +18,14 @@ Herdr's stock window with a small pixel-art koi pond tucked under the agents lis
 - **Pads:** four small lily pads hug the edges. A 9px and an 8px pad sit bottom-left, a 7px pad sits at 48% of the width along the bottom, and a 7px pad peeks in from the top at 61%.
 - **Glints:** six 1px-tall streaks (2–4px wide) in `#76a6a2` (light: `#afcfc0`), scattered across the surface.
 - **Petal:** one 2×2 pale-green `#d4e8bd` speck at 70% opacity.
-- **Layering:** water, then koi, then glints, banks, reeds and pads, then the petal, then ripples. Koi pass *under* the banks and pads.
+- **Daylight:** a flat tint over the whole pond follows the computer's local clock. Sunrise and sunset also add an orange glow that fades down from the top edge in 10 bands over the top 70% of the pond, each band weaker (quadratic falloff):
+  - **Night** (20:30–4:30): dark purple `#22073c` at 60%.
+  - **Sunrise** (6:00–6:30): orange `#ff8a50` at 6%, glow `#ffa060` from 18% at the top edge.
+  - **Day** (8:00–12:00): pale sky blue `#cdefff` at 5%.
+  - **Afternoon** (14:00–16:00): warm peach `#ffd08a` at 8%.
+  - **Sunset** (18:00–19:00): red-orange `#ff6a2a` at 12%, glow `#ff8a30` from 25% at the top edge.
+  - Between those spans it blends smoothly (smoothstep): 4:30–6:00 warms out of night into sunrise, 6:30–8:00 clears into day, and 19:00–20:30 sinks from sunset into night.
+- **Layering:** water, then koi, then glints, banks, reeds and pads, then the petal, then the daylight tint and glow, then ripples. Koi pass *under* the banks and pads, and ripples stay bright at night.
 
 **How it behaves:**
 
@@ -43,6 +50,7 @@ Herdr's stock window with a small pixel-art koi pond tucked under the agents lis
   - **Return:** it pauses half a second, then swims back to the best spot on its loop and carries on gliding. Clicking a fleeing fish again sends it off again.
 - **Resizing:** the loops scale to the pond's size. Below 120px wide, the banks, reeds, pads, glints and petal disappear and tancho swims a small central loop.
 - **Theme:** switching between dark and light themes swaps the water, glint and ripple colors at once.
+- **Time of day:** the daylight tint and glow are recomputed on every redraw (about once a second), so it drifts too slowly to see. The same tint applies in dark and light themes.
 - No keys, no hover effects.
 
 **Built from:**
@@ -67,12 +75,14 @@ Herdr's stock window with a small pixel-art koi pond tucked under the agents lis
     - `sprites.js`, generated: `HEADINGS` and per-fish sprite `size` and `head` offset.
   - **API used:**
     - **`herdr`:** only `theme().border` and `settings().dark`.
+    - **JS:** `Date` for the local hour.
     - **`gpui-kit`:** `div`, `image`, `.transition` (left, top, opacity, width, height), `.loop` (opacity, left, top), `.on_size_change`, `.on_mouse_down("left")`, `cx.timer.every` and `cx.timer.after`.
   - **What it doesn't do:** it runs no programs, reads no files, keeps no state and opens no network connections.
 - **Motion:**
   - **Swim tick:** every 1000ms the script moves each koi to its next point on the loop, and a 1000ms linear `transition` on `left`/`top` carries it there natively.
   - **Facing tick:** every 100ms a cheap check turns the sprite and redraws only when the direction slot or the bend changes.
   - **Startle:** flees and returns run as short chains of `cx.timer.after` legs.
+- **Daylight blend:** anchors at hours 0 night, 4.5 night, 6 sunrise, 6.5 sunrise, 8 day, 12 day, 14 afternoon, 16 afternoon, 18 sunset, 19 sunset, 20.5 night, 24 night. Between two anchors the tint and the glow are each blended the same way: the alpha is interpolated, the color is mixed weighted by each side's alpha, and the result is written as a `#rrggbbaa` `bg`. A phase with no glow counts as glow alpha 0, and the glow bands are skipped when its alpha is under 0.5%.
 - **Loops:** a closed Catmull-Rom spline through route points (fractions of the pond), resampled by arc length plus 9px per radian of turning.
   - kohaku: `.18,.55 .29,.30 .52,.24 .76,.34 .83,.53 .65,.72 .40,.77 .20,.71`
   - ogon: `.23,.50 .37,.36 .59,.39 .77,.28 .85,.47 .70,.62 .47,.65 .27,.77 .16,.65`
@@ -122,4 +132,5 @@ Herdr must be the front window: `herdr-app shot` returns the last frame drawn, w
 - Clicking just beside a koi shows two splash rings. The koi fades deeper, darts away within about half a second, and is back on its loop within a few seconds.
 - Folding the sidebar leaves only tancho in a plain narrow pond; unfolding brings back the three koi and the decor.
 - Switching to a light theme lightens the water to `#34565c`.
+- The pond is dark purple at night, has a faint orange warmth along its top edge at sunrise and a slightly stronger one at sunset, and is faintly warm in the afternoon, all following the computer's clock.
 - `python3 scripts/build-koi-sprites.py` reports `448 sprites`, and the koi still look and swim the same afterwards.

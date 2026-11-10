@@ -56,6 +56,18 @@ const WATER = {
   light: { shallow: "#34565c", texture: 0.65, glint: "#afcfc0", ripple: "#f0fffa" },
 };
 
+const DAYLIGHT = {
+  night: { tint: ["#22073c", 0.6] },
+  sunrise: { tint: ["#ff8a50", 0.06], glow: ["#ffa060", 0.18] },
+  day: { tint: ["#cdefff", 0.05] },
+  afternoon: { tint: ["#ffd08a", 0.08] },
+  sunset: { tint: ["#ff6a2a", 0.12], glow: ["#ff8a30", 0.25] },
+};
+const UNLIT = ["#000000", 0];
+const GLOW = { bands: 10, reach: 0.7 };
+
+const SKY = [[0, "night"], [4.5, "night"], [6, "sunrise"], [6.5, "sunrise"], [8, "day"], [12, "day"], [14, "afternoon"], [16, "afternoon"], [18, "sunset"], [19, "sunset"], [20.5, "night"], [24, "night"]];
+
 const RIPPLES = {
   splash: { rings: [["outer", 24, 0], ["inner", 12, 160]], duration: 950 },
   gulp: { rings: [["gulp", 7, 0]], duration: 700 },
@@ -138,6 +150,35 @@ const WARM_PER_TICK = Math.round((16 * STEP) / 1000);
 const WARM_MS = 600;
 
 const lerp = ([low, high], t) => low + (high - low) * t;
+
+const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const byte = (n) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, "0");
+
+const mix = ([c1, a1], [c2, a2], t) => {
+  const alpha = a1 + (a2 - a1) * t;
+  const [p, q] = [channels(c1), channels(c2)];
+  return [p.map((c, k) => (c * a1 * (1 - t) + q[k] * a2 * t) / Math.max(alpha, 0.0001)), alpha];
+};
+
+const rgba = ([rgb, alpha]) => `#${rgb.map(byte).join("")}${byte(alpha * 255)}`;
+
+const daylight = (date) => {
+  const hour = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  const i = SKY.findIndex(([at]) => at > hour);
+  const [[start, a], [end, b]] = [SKY[i - 1], SKY[i]];
+  const u = (hour - start) / (end - start);
+  const t = u * u * (3 - 2 * u);
+  const [from, to] = [DAYLIGHT[a], DAYLIGHT[b]];
+  return { tint: mix(from.tint, to.tint, t), glow: mix(from.glow ?? UNLIT, to.glow ?? UNLIT, t) };
+};
+
+const sunlight = (w, h, date) => {
+  const { tint, glow: [glow, strength] } = daylight(date);
+  const band = Math.ceil((h * GLOW.reach) / GLOW.bands);
+  const bands = strength < 0.005 ? [] : Array.from({ length: GLOW.bands }, (_, i) =>
+    div().absolute().left(0).top(i * band).w(w).h(band).bg(rgba([glow, strength * (1 - i / GLOW.bands) ** 2])));
+  return [div().absolute().left(0).top(0).w(w).h(h).bg(rgba(tint)), ...bands];
+};
 
 export default class KoiPond extends View {
   init(_props, cx) {
@@ -512,6 +553,7 @@ export default class KoiPond extends View {
         div().id(`${key}-petal`).absolute().w(2).h(2).bg("#d4e8bd").opacity(0.7)
           .loop("left", { from: Math.round(w * 0.12), to: Math.round(w * 0.86), period: 43000 })
           .loop("top", { from: Math.round(h * 0.16), to: Math.round(h * 0.72), period: 27000 })))
+      .children(sunlight(w, h, new Date()))
       .children(this.ripples.flatMap((ripple) => RIPPLES[ripple.kind].rings.map((spec) => this.ring(ripple, spec, water.ripple))));
   }
 }
