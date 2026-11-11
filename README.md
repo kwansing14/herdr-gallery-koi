@@ -15,7 +15,7 @@ Three koi swim their own loops through dark teal water, under lily banks, reeds 
 Ask your agent:
 
 ```
-Read ~/.config/herdr-app/AGENTS.md, then add this mod and put it under my agents list: github.com/kwansing14/herdr-gallery-koi
+Read ~/.config/herdr-app/AGENTS.md, then add this mod and put it under my agents list: github.com/kwansing14/herdr-koi-pond
 ```
 
 The pond needs a spot in a layout, so the agent adds a 124px `koi` block under the agents list of the layout you use. Herdr's own `main` is read-only: if that's yours, the agent clones it first and adds the pond to the clone.
