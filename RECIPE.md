@@ -192,6 +192,7 @@ The pond at five times of day:
 - **Bend direction:** the `-right` sheets curve the tail to the fish's right, which is the inside of a clockwise turn on screen. Flip the sign and the tail flares outward, so the fish looks like it turns the other way.
 - **Click targets:** clicks and the feeding ring use where a koi is *drawn*, interpolated along its current move. They don't use the move's end point, which can be tens of pixels away while fleeing.
 - **Size before first layout:** the pond assumes 252×112 until its first size report. On resize the loops are rebuilt and the koi are placed at their current point without skipping ahead. Fleeing koi finish their flee first.
+- **Zoom:** at a zoom other than 100%, `on_size_change` reports the pond's size multiplied by the zoom, and `loop()` takes `left`/`top` values in zoomed pixels. `.left()`, `.top()` and sizes are scaled by Herdr. The mod divides the reported size by `settings().zoom` and multiplies the pads' bob and the petal's drift by it. Without that, at 200% the bottom-right bank, the reeds and half of each koi loop fall outside the pond, and the bottom pads float up to its middle.
 - **Size limits:**
   - under 120px wide: only tancho, and no decor;
   - 120–319px: three koi;
@@ -211,6 +212,7 @@ The pond at five times of day:
 - A turning koi bends its tail toward the inside of the turn, and no koi blinks out while turning.
 - Every 8–15 seconds each shallow koi opens a small ring at its mouth.
 - Clicking just beside a koi shows two splash rings. The koi fades deeper, darts away within about half a second, and is back on its loop within a few seconds.
+- At 200% zoom the pond looks the same as at 100%, only larger: banks, reeds and pads in their corners, all koi in the water.
 - Folding the sidebar leaves only tancho in a plain narrow pond; unfolding brings back the three koi and the decor.
 - Switching to a light appearance lightens the water to `#34565c`.
 - The pond follows the computer's clock:

@@ -512,6 +512,7 @@ export default class KoiPond extends View {
   render() {
     const t = theme();
     const water = settings()?.dark === false ? WATER.light : WATER.dark;
+    const scale = Number(settings()?.zoom) || 1;
     const pond = this.pond();
     const { w, h, compact: narrow } = pond;
     const key = `${w}x${h}`;
@@ -528,7 +529,9 @@ export default class KoiPond extends View {
 
     return div().id("koi-pond").relative().size_full().overflow_hidden().rounded(10)
       .bg(water.shallow).border(1).border_color(t.border)
-      .on_size_change((size, cx) => {
+      .on_size_change((raw, cx) => {
+        const scale = Number(settings()?.zoom) || 1;
+        const size = { width: raw.width / scale, height: raw.height / scale };
         if (Math.round(size.width) === w && Math.round(size.height) === h) return;
         this.size = size;
         this.paths = {};
@@ -548,11 +551,11 @@ export default class KoiPond extends View {
         .child(image(art("lily-bank-right.svg")).absolute().left(w - z(78)).top(h - z(58)).w(z(96)).h(z(78))))
       .children(pads.map(([file, size, x, y, period], i) =>
         image(art(file)).id(`${key}-pad${i}`).absolute().left(x).top(y).size(size)
-          .loop("top", { from: y, to: y + 1, period })))
+          .loop("top", { from: y * scale, to: (y + 1) * scale, period })))
       .when(!narrow, (el) => el.child(
         div().id(`${key}-petal`).absolute().w(2).h(2).bg("#d4e8bd").opacity(0.7)
-          .loop("left", { from: Math.round(w * 0.12), to: Math.round(w * 0.86), period: 43000 })
-          .loop("top", { from: Math.round(h * 0.16), to: Math.round(h * 0.72), period: 27000 })))
+          .loop("left", { from: Math.round(w * 0.12) * scale, to: Math.round(w * 0.86) * scale, period: 43000 })
+          .loop("top", { from: Math.round(h * 0.16) * scale, to: Math.round(h * 0.72) * scale, period: 27000 })))
       .children(sunlight(w, h, new Date()))
       .children(this.ripples.flatMap((ripple) => RIPPLES[ripple.kind].rings.map((spec) => this.ring(ripple, spec, water.ripple))));
   }
