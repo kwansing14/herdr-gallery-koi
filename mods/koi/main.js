@@ -65,6 +65,8 @@ const DAYLIGHT = {
 };
 const UNLIT = ["#000000", 0];
 const GLOW = { bands: 10, reach: 0.7 };
+const ROUND = 10;
+const TILE = 128;
 
 const SKY = [[0, "night"], [4.5, "night"], [6, "sunrise"], [6.5, "sunrise"], [8, "day"], [12, "day"], [14, "afternoon"], [16, "afternoon"], [18, "sunset"], [19, "sunset"], [20.5, "night"], [24, "night"]];
 
@@ -172,12 +174,54 @@ const daylight = (date) => {
   return { tint: mix(from.tint, to.tint, t), glow: mix(from.glow ?? UNLIT, to.glow ?? UNLIT, t) };
 };
 
+const radius = (w, h) => Math.max(0, Math.min(ROUND, Math.floor(w / 2), Math.floor(h / 2)));
+
+const clip = (x, y, w, h, children) =>
+  div().absolute().left(x).top(y).w(w).h(h).overflow_hidden().children(children);
+
+const CORNERS = [
+  { right: false, bottom: false, round: "rounded_tl" },
+  { right: true, bottom: false, round: "rounded_tr" },
+  { right: false, bottom: true, round: "rounded_bl" },
+  { right: true, bottom: true, round: "rounded_br" },
+];
+
+const texture = (w, h, opacity) => {
+  const r = radius(w, h);
+  const tile = (x, y) => image(art("water.svg")).absolute().left(x).top(y).size(TILE).opacity(opacity);
+  const grid = (x0, y0, cw, ch) => {
+    if (cw <= 0 || ch <= 0) return [];
+    const tiles = [];
+    for (let ty = Math.floor(y0 / TILE) * TILE; ty < y0 + ch; ty += TILE)
+      for (let tx = Math.floor(x0 / TILE) * TILE; tx < x0 + cw; tx += TILE) tiles.push(tile(tx - x0, ty - y0));
+    return [clip(x0, y0, cw, ch, tiles)];
+  };
+  const corners = r === 0 ? [] : CORNERS.map(({ right, bottom, round }) =>
+    clip(right ? w - r : 0, bottom ? h - r : 0, r, r, [tile(right ? r - TILE : 0, bottom ? r - TILE : 0)[round](r)]));
+  return [...grid(r, 0, w - 2 * r, r), ...grid(0, r, w, h - 2 * r), ...grid(r, h - r, w - 2 * r, r), ...corners];
+};
+
+const band = (y0, y1, w, h, color) => {
+  const r = radius(w, h);
+  const strip = (a, b, x, sw) => div().absolute().left(x).top(a).w(sw).h(b - a).bg(color);
+  const pieces = [];
+  const middle = [Math.max(y0, r), Math.min(y1, h - r)];
+  if (middle[1] > middle[0]) pieces.push(strip(...middle, 0, w));
+  for (const [a, b, bottom] of [[y0, Math.min(y1, r), false], [Math.max(y0, h - r), y1, true]]) {
+    if (b <= a) continue;
+    pieces.push(strip(a, b, r, w - 2 * r));
+    for (const right of [false, true]) pieces.push(clip(right ? w - r : 0, a, r, b - a, [
+      div().absolute().left(right ? -r : 0).top((bottom ? h - 2 * r : 0) - a).size(2 * r).rounded(r).bg(color)]));
+  }
+  return pieces;
+};
+
 const sunlight = (w, h, date) => {
   const { tint, glow: [glow, strength] } = daylight(date);
-  const band = Math.ceil((h * GLOW.reach) / GLOW.bands);
+  const step = Math.ceil((h * GLOW.reach) / GLOW.bands);
   const bands = strength < 0.005 ? [] : Array.from({ length: GLOW.bands }, (_, i) =>
-    div().absolute().left(0).top(i * band).w(w).h(band).bg(rgba([glow, strength * (1 - i / GLOW.bands) ** 2])));
-  return [div().absolute().left(0).top(0).w(w).h(h).bg(rgba(tint)), ...bands];
+    band(i * step, (i + 1) * step, w, h, rgba([glow, strength * (1 - i / GLOW.bands) ** 2]))).flat();
+  return [div().absolute().left(0).top(0).w(w).h(h).rounded(radius(w, h)).bg(rgba(tint)), ...bands];
 };
 
 export default class KoiPond extends View {
@@ -516,19 +560,15 @@ export default class KoiPond extends View {
     const pond = this.pond();
     const { w, h, compact: narrow } = pond;
     const key = `${w}x${h}`;
-    const tileColumns = Math.ceil(w / 128);
-    const tiles = Array.from({ length: tileColumns * Math.ceil(h / 128) }, (_, i) =>
-      image(art("water.svg")).absolute().left((i % tileColumns) * 128).top(Math.floor(i / tileColumns) * 128)
-        .size(128).opacity(water.texture));
     const pads = narrow ? [] : [
-      ["lily.svg", z(17), z(4), h - z(19), 9100],
+      ["lily.svg", z(17), z(7), h - z(22), 9100],
       ["lily.svg", z(14), z(22), h - z(12), 7300],
       ["lily.svg", z(12), Math.round(w * 0.48), h - z(16), 8100],
       ["lily.svg", z(12), Math.round(w * 0.61), -z(3), 9300],
     ];
 
-    return div().id("koi-pond").relative().size_full().overflow_hidden().rounded(10)
-      .bg(water.shallow).border(1).border_color(t.border)
+    return div().id("koi-pond").relative().size_full().overflow_hidden().rounded(ROUND)
+      .bg(water.shallow)
       .on_size_change((raw, cx) => {
         const scale = Number(settings()?.zoom) || 1;
         const size = { width: raw.width / scale, height: raw.height / scale };
@@ -540,15 +580,15 @@ export default class KoiPond extends View {
       })
       .on_mouse_down("left", (event, cx) => this.splash(event, cx))
       .children([...this.warm.keys()].map((path) => image(path).absolute().size(1).opacity(0)))
-      .children(tiles)
+      .children(texture(w, h, water.texture))
       .children(pond.school.map((fish) => this.fish(fish)).filter(Boolean))
       .children(narrow ? [] : GLINTS.map(([fx, fy, len, period], i) =>
         div().id(`${key}-glint${i}`).absolute().left(Math.round(fx * w)).top(Math.round(fy * h)).w(Math.max(2, z(len))).h(1)
           .bg(water.glint).loop("opacity", { from: 0.04, to: 0.28, period })))
       .when(!narrow, (el) => el
         .child(image(art("reeds.svg")).absolute().left(w - z(39)).top(h - z(89)).w(z(49)).h(z(63)))
-        .child(image(art("lily-bank.svg")).absolute().left(-z(8)).top(-z(13)).w(z(90)).h(z(64)))
-        .child(image(art("lily-bank-right.svg")).absolute().left(w - z(78)).top(h - z(58)).w(z(96)).h(z(78))))
+        .child(image(art("lily-bank.svg")).absolute().left(0).top(0).w(z(82)).h(z(51)).rounded_tl(radius(w, h)))
+        .child(image(art("lily-bank-right.svg")).absolute().left(w - z(78)).top(h - z(58)).w(z(78)).h(z(58)).rounded_br(radius(w, h))))
       .children(pads.map(([file, size, x, y, period], i) =>
         image(art(file)).id(`${key}-pad${i}`).absolute().left(x).top(y).size(size)
           .loop("top", { from: y * scale, to: (y + 1) * scale, period })))
@@ -557,6 +597,7 @@ export default class KoiPond extends View {
           .loop("left", { from: Math.round(w * 0.12) * scale, to: Math.round(w * 0.86) * scale, period: 43000 })
           .loop("top", { from: Math.round(h * 0.16) * scale, to: Math.round(h * 0.72) * scale, period: 27000 })))
       .children(sunlight(w, h, new Date()))
-      .children(this.ripples.flatMap((ripple) => RIPPLES[ripple.kind].rings.map((spec) => this.ring(ripple, spec, water.ripple))));
+      .children(this.ripples.flatMap((ripple) => RIPPLES[ripple.kind].rings.map((spec) => this.ring(ripple, spec, water.ripple))))
+      .child(div().absolute().left(0).top(0).size_full().rounded(ROUND).border(1).border_color(t.border));
   }
 }

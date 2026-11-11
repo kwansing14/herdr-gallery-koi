@@ -7,7 +7,7 @@ A small pixel-art koi pond that tucks under the agents list of the person's own 
 **What you see:**
 
 - **The pond, 124px tall, sits at the bottom of the agents list,** across the sidebar. The rest of the window is the person's own layout, unchanged.
-- **Size:** the block has 6px top/bottom and 8px side padding, so in Herdr's 268px sidebar the water is 252×112. It has rounded corners (10px) and a 1px border in the theme's `border` color.
+- **Size:** the block has 6px top/bottom and 8px side padding, so in Herdr's 268px sidebar the water is 252×112. It has rounded corners (10px) and a 1px border in the theme's `border` color, drawn over everything inside. Nothing inside pokes past the rounded corners at any time of day.
 - **Water:** `#102630` in a dark appearance, `#34565c` in a light one. A pixel water texture covers it, tiled every 128px (full strength in dark, 65% opacity in light).
 - **Three koi:** pixel sprites, nearest-neighbour, each with a `#071b27` drop shadow 2px right and 3px down.
   - **kohaku:** white `#dee8df` with red `#cb4e60` patches; the largest, a 34px sprite.
@@ -15,12 +15,12 @@ A small pixel-art koi pond that tucks under the agents list of the person's own 
   - **sanke:** white with red and black `#27333e` patches; a 30px sprite.
   - **tancho:** white with one red crown spot; a 26px sprite. It swims alone when the pond is narrower than 120px (a folded sidebar), and joins as a fourth fish when the pond is 320px or wider.
 - **Banks** (positions are each image's top-left corner, w × h = pond size):
-  - A lily bank fills the top-left corner: 50×35 at (−4, −7).
+  - A lily bank fills the top-left corner: 45×28 at (0, 0), its top-left corner rounded to the pond's 10px curve.
   - Reeds rise in the bottom-right: 27×35 at (w−21, h−49).
-  - A second lily bank covers the bottom-right corner, drawn over the reeds' base: 53×43 at (w−43, h−32).
-  - Each spills past the pond's edge and is clipped by its rounded corners.
+  - A second lily bank covers the bottom-right corner, drawn over the reeds' base: 43×32 at (w−43, h−32), its bottom-right corner rounded the same way.
+  - Each bank's art is cropped to what shows inside the pond, so it ends exactly at its corner and looks like it carries on past the edge.
 - **Pads:** four small lily pads hug the edges:
-  - a 9px pad at (2, h−10) and an 8px pad at (12, h−7), bottom-left;
+  - a 9px pad at (4, h−12) and an 8px pad at (12, h−7), bottom-left;
   - a 7px pad at (48% of w, h−9) along the bottom;
   - a 7px pad at (61% of w, −2), peeking in from the top.
 - **Glints:** six 1px-tall streaks in `#76a6a2` (light: `#afcfc0`). They sit at (30%, 24%), (50%, 16%), (70%, 32%), (24%, 74%), (58%, 82%) and (86%, 48%) of the pond. They are 3, 2, 4, 3, 2 and 3px wide.
@@ -37,7 +37,7 @@ A small pixel-art koi pond that tucks under the agents list of the person's own 
     - 12:00–14:00 warms into afternoon;
     - 16:00–18:00 deepens into sunset;
     - 19:00–20:30 sinks into night.
-- **Layering, bottom to top:** water and texture; koi; glints; reeds; the left bank; the right bank; pads; petal; daylight tint and glow; ripples. Koi pass *under* the banks and pads, and ripples stay bright at night.
+- **Layering, bottom to top:** water and texture; koi; glints; reeds; the left bank; the right bank; pads; petal; daylight tint and glow; ripples; the border. Koi pass *under* the banks and pads, and ripples stay bright at night.
 
 The pond at five times of day:
 
@@ -100,9 +100,9 @@ The pond at five times of day:
     - `main.js`: one `View`.
     - `sprites.js`: generated. It holds `HEADINGS` (16) and each fish's sprite `size` and `head` (mouth offset): kohaku 34/9, ogon 30/8, sanke 30/8, tancho 26/7.
   - **API used:**
-    - `herdr`: only `theme().border` and `settings().dark`. It runs no commands.
+    - `herdr`: only `theme().border`, `settings().dark` and `settings().zoom`. It runs no commands.
     - JS: `Date` for the local hour.
-    - `gpui-kit`: `div` and `image`; `.transition` (left, top, opacity, width, height); `.loop` (opacity, left, top); `.on_size_change`; `.on_mouse_down("left")` with `event.local_position`; `cx.timer.every` and `cx.timer.after`.
+    - `gpui-kit`: `div` and `image`; `.overflow_hidden`, `.rounded` and `.rounded_tl`/`_tr`/`_bl`/`_br`; `.transition` (left, top, opacity, width, height); `.loop` (opacity, left, top); `.on_size_change`; `.on_mouse_down("left")` with `event.local_position`; `cx.timer.every` and `cx.timer.after`.
   - **What it doesn't do:** it runs no programs, reads no files, keeps no state and opens no network connections.
 - **Ticks:**
   - **Swim tick:** every 1000ms the script moves each koi to its next point on the loop. A 1000ms linear `transition` on `left`/`top` carries it there natively.
@@ -154,7 +154,7 @@ The pond at five times of day:
   - A phase with no glow counts as glow alpha 0. The glow bands are skipped when the glow's alpha is under 0.5%.
   - Glow band i (0–9) is ceil(0.07·h) px tall, at alpha glow × (1 − i/10)².
 - **Decor sizes:** in the source art the decor sizes are multiples of a 0.55 zoom, rounded:
-  - the banks are 90×64 and 96×78 at zoom 1;
+  - the banks are 82×51 and 78×58 at zoom 1, cropped by their `viewBox` from 90×64 and 96×78 art (`8 13 82 51` and `0 0 78 58`);
   - the reeds are 49×63;
   - the pads are 17, 14, 12 and 12.
 - **Sprites:** `mods/koi/sprites/<fish>-<gait>[-left|-right]-<00..15>.gif`, 448 GIFs that `image()` plays natively.
@@ -193,6 +193,14 @@ The pond at five times of day:
 - **Click targets:** clicks and the feeding ring use where a koi is *drawn*, interpolated along its current move. They don't use the move's end point, which can be tens of pixels away while fleeing.
 - **Size before first layout:** the pond assumes 252×112 until its first size report. On resize the loops are rebuilt and the koi are placed at their current point without skipping ahead. Fleeing koi finish their flee first.
 - **Zoom:** at a zoom other than 100%, `on_size_change` reports the pond's size multiplied by the zoom, and `loop()` takes `left`/`top` values in zoomed pixels. `.left()`, `.top()` and sizes are scaled by Herdr. The mod divides the reported size by `settings().zoom` and multiplies the pads' bob and the petal's drift by it. Without that, at 200% the bottom-right bank, the reeds and half of each koi loop fall outside the pond, and the bottom pads float up to its middle.
+- **Rounded corners:** `.overflow_hidden()` clips to a plain rectangle, not to `.rounded()`, so anything that reaches a corner fills it square. The mod keeps every layer inside the 10px curve:
+  - **Texture:** drawn in three clipped strips that avoid the four 10×10 corner squares. Each corner square gets one tile aligned to that corner and rounded there.
+  - **Banks:** cropped so each image's own corner is the pond's corner, then rounded there with `.rounded_tl` / `.rounded_br`.
+  - **Pads:** the bottom-left pad sits far enough in that it never crosses the curve, even at the bottom of its bob.
+  - **Light:** the tint is one rounded div. Glow bands that reach the top or bottom 10px are split: a middle strip, plus a 20×20 rounded div clipped to each corner square.
+  - **Border:** drawn last, as its own rounded div, so the banks don't cover it.
+  - A radius can't be more than half of a box's shortest side, so a corner piece can't be a 10×10 box rounded by 10. It has to be a bigger rounded box, clipped.
+  - Ripples from a click right in a corner can still cross the curve while they fade.
 - **Size limits:**
   - under 120px wide: only tancho, and no decor;
   - 120–319px: three koi;
@@ -213,6 +221,7 @@ The pond at five times of day:
 - Every 8–15 seconds each shallow koi opens a small ring at its mouth.
 - Clicking just beside a koi shows two splash rings. The koi fades deeper, darts away within about half a second, and is back on its loop within a few seconds.
 - At 200% zoom the pond looks the same as at 100%, only larger: banks, reeds and pads in their corners, all koi in the water.
+- In a screenshot at 200% zoom, all four corners follow the 10px curve, with nothing square behind them, by day, at night and at sunset. The border runs unbroken over the banks.
 - Folding the sidebar leaves only tancho in a plain narrow pond; unfolding brings back the three koi and the decor.
 - Switching to a light appearance lightens the water to `#34565c`.
 - The pond follows the computer's clock:
