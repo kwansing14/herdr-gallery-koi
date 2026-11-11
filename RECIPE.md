@@ -1,18 +1,13 @@
 # Koi Pond
 
-Herdr's stock window with a small pixel-art koi pond tucked under the agents list. Three koi swim their own loops through dark teal water, under lily banks, reeds and floating pads. They drift deeper and back up, sip at the surface, and scatter when you click near them. The pond's light follows the computer's clock: purple at night, warm orange along the top at sunrise and sunset.
+A small pixel-art koi pond that tucks under the agents list of the person's own Herdr window. Three koi swim their own loops through dark teal water, under lily banks, reeds and floating pads. They drift deeper and back up, sip at the surface, and scatter when you click near them. The pond's light follows the computer's clock: purple at night, warm orange along the top at sunrise and sunset. It is a mod: it adds the pond and changes nothing else in the window.
 
 ![Koi Pond](preview.png)
 
 **What you see:**
 
-- **Everything outside the pond is Herdr's stock `main` layout:**
-  - a 268px sidebar in the theme's `chrome` color, holding the brand header (46px), the spaces list, the agents list and the footer (69px);
-  - the 42px tab bar;
-  - terminal panes as cards with a 30px header;
-  - the Files/Changes panel, hidden until opened (368px);
-  - the 28px status bar.
-- **The pond, 124px tall, sits at the bottom of the agents column.** It has 6px top/bottom and 8px side padding, so at the default sidebar width the water is 252×112. It has rounded corners (10px) and a 1px border in the theme's `border` color.
+- **The pond, 124px tall, sits at the bottom of the agents list,** across the sidebar. The rest of the window is the person's own layout, unchanged.
+- **Size:** the block has 6px top/bottom and 8px side padding, so in Herdr's 268px sidebar the water is 252×112. It has rounded corners (10px) and a 1px border in the theme's `border` color.
 - **Water:** `#102630` in a dark appearance, `#34565c` in a light one. A pixel water texture covers it, tiled every 128px (full strength in dark, 65% opacity in light).
 - **Three koi:** pixel sprites, nearest-neighbour, each with a `#071b27` drop shadow 2px right and 3px down.
   - **kohaku:** white `#dee8df` with red `#cb4e60` patches; the largest, a 34px sprite.
@@ -52,7 +47,7 @@ The pond at five times of day:
 
 **How it behaves:**
 
-- **Agent statuses** (working, blocked, done, idle) look exactly as in the stock layout: the shipped `agents`, `spaces`, `tabs` and `pane` mods draw them. The pond ignores agents.
+- **Agent statuses** (working, blocked, done, idle) don't reach the pond: it looks and behaves the same in every one. The agents list above it draws them as before.
 - **Swimming:** each koi follows its own closed loop.
   - **Lap time:** at full speed a lap takes 32 seconds divided by the fish's pace: kohaku 32s, ogon 29s, sanke 35s, tancho 30s. Coasting and hovering make real laps longer.
   - **Rhythm:** each fish has its own rhythm of speed bursts (kohaku 5 per lap, ogon 7, sanke 4, tancho 6) and a gentle sideways sway (±1.8px).
@@ -89,28 +84,16 @@ The pond at five times of day:
 **Built from:**
 
 - **This folder:**
-  - `layouts/koi.json`.
   - `mods/koi/`.
   - `scripts/build-koi-sprites.py`, which builds the sprites.
   - `previews/` (the five time-of-day shots above).
   - `preview.png`, a copy of the sunset shot.
-- **Layout `layouts/koi.json`:** a copy of the stock `main` layout from Herdr 0.1.14. The only change: the stock `agents` block (min 90) becomes a column holding the agents block and the pond. The node tree:
-  - Row `root`: `titlebar: "none"`, `traffic_lights: [12, 16]`, background `canvas`, `terminal_padding: [14, 12]`, 1px `border` divider. It holds column `sidebar` and column `work`.
-  - Column `sidebar`: 268px, min 44, max 480, `chrome` background, `resizable: false`.
-    - Block `brand`: 46px, `window_drag`, mod `workspace-chrome`.
-    - Column `sidebar-lists`:
-      - Block `spaces`: weight 1, min 90, mod `spaces`.
-      - Column `agents-area`: weight 1, min 190.
-        - Block `agents`: weight 1, min 60, mod `agents`.
-        - Block `koi-pond`: 124px, padding `[6, 8]`, mod `koi`.
-    - Block `sidebar-footer`: 69px, mod `workspace-chrome` with props `{ "footer": true }`.
-  - Column `work`: `resizable: false`.
-    - Block `tabs`: 42px, `window_drag`, mod `tabs`.
-    - Row `work-body`: padding 8, gap 8.
-      - Block `main`: `{ "tab": "active" }`. Its panes have gap 8, radius 10, `background` fill, `lone: true`, a 1px `border` that turns `accent` on focus, and the `pane` mod as a 30px top header with `reveal: "always"`.
-      - Column `panel`: hidden, 368px, min 280, max 900. It holds stack `panel-body` (active `files`), with blocks `files` and `changes`.
-    - Block `status`: 28px, mod `workspace-status`.
-- **Shipped mods used:** `workspace-chrome` (header and footer), `spaces`, `agents`, `tabs`, `pane` (pane header), `files`, `changes`, `workspace-status`.
+- **Placement:** `mod.json` is `{"place":"none"}`, so Herdr docks no copy on its own; the pond shows wherever a layout has a `koi` block. Under the agents list, the layout's `agents` block becomes a column holding the agents block and the pond:
+  - Column `agents-area`: the old agents block's size (weight 1 in `main`), min 190.
+    - Block `agents`: weight 1, min 60, mod `agents`.
+    - Block `koi-pond`: 124px, padding `[6, 8]`, mod `koi`.
+  - In Herdr's `main` (0.1.14 and 0.1.15) the agents block is weight 1, min 90, the second child of column `sidebar-lists` in the 268px column `sidebar`. `main` is read-only, so the block goes into a clone: `herdr-app do layout.clone '{"name":"main","as":"main-koi"}'`, then edit `layouts/main-koi.json`.
+  - In a layout of the person's own, the same column replaces their `agents` block in place.
 - **Mod `koi`:**
   - **Files:**
     - `mod.json`: `{"place":"none"}`.
@@ -214,15 +197,16 @@ The pond at five times of day:
   - 120–319px: three koi;
   - 320px and up (a sidebar of 336px or more): four koi.
 - **Memory:** if every sheet of every fish gets loaded, the decoded frames take about 33 MB.
-- **Stock layout copy:** the layout is a snapshot of `main` from Herdr 0.1.14. Later changes to Herdr's own `main` won't appear in it.
-- **No settings picture:** the layout has no root `preview`, so Herdr's settings screen shows a plain frame for it.
+- **Nothing shows after copying:** with `place: none`, copying `mods/koi/` adds no block. The pond appears once the shown layout has a `koi` block.
+- **Shipped layouts are read-only:** don't add the block to Herdr's `main.json` itself. The next start moves the edited file to `main-edited` and restores Herdr's version. Clone `main` and edit the clone.
+- **Other spots:** the pond fills whatever block holds it and its loops scale, but the art is drawn for about 252×112. In a much bigger block the banks stay in their corners with open water between.
 - **Rebuilding sprites:** rebuilding overwrites `mods/koi/sprites/` and `sprites.js`. With the same Pillow and librsvg versions, a rebuild with unchanged inputs produces identical files; other versions may shift antialiased edge pixels.
 - **Screenshots:** `herdr-app shot` returns the last frame drawn, which goes stale while Herdr is behind another app. Bring Herdr to the front before taking one.
 
 **Done when:**
 
-- `herdr-app check ~/.config/herdr-app/mods/koi` passes, and `herdr-app status` shows `"errors": []` after `herdr-app do layout.switch '{"name":"koi"}'`.
-- A 252×112 pond with a rounded border sits under the agents list. Everything else matches Herdr's stock `main`.
+- `herdr-app check ~/.config/herdr-app/mods/koi` passes, and with the `koi-pond` block in the shown layout, `herdr-app status` shows `"errors": []`.
+- In a 268px sidebar, a 252×112 pond with a rounded border sits under the agents list. Everything else in the layout looks as it did before.
 - Kohaku, ogon and sanke swim continuously, pass under the banks and pads, and never leave the water.
 - A turning koi bends its tail toward the inside of the turn, and no koi blinks out while turning.
 - Every 8–15 seconds each shallow koi opens a small ring at its mouth.
